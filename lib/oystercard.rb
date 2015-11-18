@@ -24,7 +24,8 @@ class Oystercard
     self.current_journey = journey
   end
 
-  def touch_out
+  def touch_out(station)
+    current_journey[:exit_station] = station 
     self.journey_history << current_journey
     self.current_journey = nil
     deduct(journey_fare)

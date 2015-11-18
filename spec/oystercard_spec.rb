@@ -33,6 +33,7 @@ describe Oystercard do
 
     let(:journey) { { entry_station: :station } }
 
+    let(:station) { :station }
     context "with adequate funds for travel" do
 
       before do
@@ -49,20 +50,26 @@ describe Oystercard do
         expect(oystercard).to be_in_journey
       end
 
+      it "remembers the exit station after touching out" do
+        oystercard.touch_in(journey)
+        oystercard.touch_out(station)
+        expect(oystercard.journey_history.last[:exit_station]).to eq(station)
+      end
+
       it "is not in an active journey when the user has touched out" do
         oystercard.touch_in(journey)
-        oystercard.touch_out
+        oystercard.touch_out(station)
         expect(oystercard).to_not be_in_journey
       end
 
       it "deducts the journey fare once the user touches out" do
         oystercard.touch_in(journey)
-        expect{ oystercard.touch_out }.to change{ oystercard.balance }.by(-1)
+        expect{ oystercard.touch_out(station) }.to change{ oystercard.balance }.by(-1)
       end
 
       it "stores a journey after you've touched in and out" do
         oystercard.touch_in(journey)
-        oystercard.touch_out
+        oystercard.touch_out(station)
         expect(oystercard.journey_history).to eq([journey])
       end
     end
