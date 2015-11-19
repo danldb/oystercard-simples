@@ -2,7 +2,9 @@ require 'oystercard'
 
 describe Oystercard do
 
-  subject(:oystercard) { described_class.new }
+  subject(:oystercard){ described_class.new(journey_log)}
+
+  let(:journey_log) { spy :journey_log }
 
   it "has a balance of £0" do
     expect(oystercard.balance).to eq(0)
@@ -13,7 +15,7 @@ describe Oystercard do
   end
 
   it "has an empty journey list by default" do
-    expect(oystercard.journey_history).to eq([])
+    expect(oystercard.journey_log).to eq(journey_log)
   end
 
   describe "Topping up" do
@@ -32,8 +34,8 @@ describe Oystercard do
   describe "Touching in and out" do
 
     let(:journey) { spy :journey }
-
     let(:station) { :station }
+
     context "with adequate funds for travel" do
 
       before do
@@ -70,7 +72,7 @@ describe Oystercard do
       it "stores a journey after you've touched in and out" do
         oystercard.touch_in(journey)
         oystercard.touch_out(station)
-        expect(oystercard.journey_history).to eq([journey])
+        expect(journey_log).to have_received(:add).with(journey) 
       end
     end
 
