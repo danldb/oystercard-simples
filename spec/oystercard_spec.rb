@@ -31,7 +31,7 @@ describe Oystercard do
 
   describe "Touching in and out" do
 
-    let(:journey) { { entry_station: :station } }
+    let(:journey) { spy :journey }
 
     let(:station) { :station }
     context "with adequate funds for travel" do
@@ -53,7 +53,7 @@ describe Oystercard do
       it "remembers the exit station after touching out" do
         oystercard.touch_in(journey)
         oystercard.touch_out(station)
-        expect(oystercard.journey_history.last[:exit_station]).to eq(station)
+        expect(journey).to have_received(:exit).with(station)
       end
 
       it "is not in an active journey when the user has touched out" do
