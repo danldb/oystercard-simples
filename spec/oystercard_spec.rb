@@ -34,45 +34,61 @@ describe Oystercard do
   describe "Touching in and out" do
 
     let(:journey) { spy :journey }
+    
     let(:station) { :station }
 
-    context "with adequate funds for travel" do
+    context "when touched in" do
 
+      let(:second_journey) { double :second_journey, fare: 6 }
       before do
-        oystercard.top_up(1)
+        oystercard.top_up(20)
+        allow(journey).to receive(:fare).and_return(0)
+        oystercard.touch_in(journey)
       end
 
-      it "remembers the entry journey after touching in" do
-        oystercard.touch_in(journey)
+      it "remembers the entry journey" do
         expect(oystercard.current_journey).to eq(journey)
       end
 
-      it "is in an active journey after touching in" do
-        oystercard.touch_in(journey)
+      it "is in an active journey" do
         expect(oystercard).to be_in_journey
       end
 
+      it "will not store a journey if a current journey does not exit" do
+        expect(journey_log).not_to have_received(:add)
+      end
+
       it "remembers the exit station after touching out" do
-        oystercard.touch_in(journey)
         oystercard.touch_out(station)
-        expect(journey).to have_received(:exit).with(station)
+        expect(journey).to have_received(:set_exit).with(station)
       end
 
       it "is not in an active journey when the user has touched out" do
-        oystercard.touch_in(journey)
         oystercard.touch_out(station)
         expect(oystercard).to_not be_in_journey
       end
 
       it "deducts the journey fare once the user touches out" do
-        oystercard.touch_in(journey)
+        allow(journey).to receive(:fare).and_return(1)
         expect{ oystercard.touch_out(station) }.to change{ oystercard.balance }.by(-1)
       end
 
       it "stores a journey after you've touched in and out" do
-        oystercard.touch_in(journey)
         oystercard.touch_out(station)
         expect(journey_log).to have_received(:add).with(journey) 
+      end
+
+      context "when touching in twice" do
+
+        it "stores previous journey"  do
+          oystercard.touch_in(second_journey)
+          expect(journey_log).to have_received(:add).with(journey)
+        end
+
+        it "charges user for previous journey" do
+          allow(journey).to receive(:fare).and_return(1)
+          expect{ oystercard.touch_in(second_journey) }.to change{ oystercard.balance }.by(-1)
+        end
       end
     end
 

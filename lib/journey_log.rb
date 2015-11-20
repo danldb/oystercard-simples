@@ -7,6 +7,6 @@ class JourneyLog
   end
 
   def add(journey)
-    journeys << journey
+    journeys << journey if journey
   end
 end

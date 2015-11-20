@@ -2,6 +2,7 @@ class Oystercard
 
   MAXIMUM_BALANCE = 90
   MINIMUM_BALANCE = 1
+  NO_CHARGE = 0
 
   attr_reader :balance, :current_journey, :journey_log
 
@@ -20,27 +21,33 @@ class Oystercard
   end
 
   def touch_in(journey)
+    conclude_active_journey
     raise "Too low funds" if below_minimum_balance?
     self.current_journey = journey
   end
 
-  def touch_out(station)
-    current_journey.exit(station)
-    journey_log.add(current_journey)
+  def touch_out(station, new_journey = Journey.new)
+    current_journey = new_journey unless current_journey
+    current_journey.set_exit(station)
+    conclude_active_journey
     self.current_journey = nil
-    deduct(journey_fare)
   end
 
   private
 
   attr_writer :balance, :current_journey
 
-  def journey_fare
-    1
+  def conclude_active_journey
+    journey_log.add(current_journey) if current_journey
+    deduct_outstanding_balance
   end
 
-  def deduct(amount_deducted)
-    self.balance -= amount_deducted
+  def journey_fare
+    current_journey ? current_journey.fare : NO_CHARGE
+  end
+
+  def deduct_outstanding_balance 
+    self.balance -= journey_fare
   end
 
   def below_minimum_balance?
