@@ -4,7 +4,8 @@ describe Oystercard do
 
   subject(:oystercard) { described_class.new }
 
-  let(:station) { double :station }
+  let(:entry_station) { double :entry_station }
+  let(:exit_station) { double :exit_station }
 
   it "has a balance" do
     expect(oystercard.balance).to eq(0)
@@ -25,7 +26,7 @@ describe Oystercard do
   end
 
   it "will not touch in if below minimum balance" do
-    expect{ oystercard.touch_in(station) }.to raise_error("You don't have enough")
+    expect{ oystercard.touch_in(entry_station) }.to raise_error("You don't have enough")
   end
 
   it "deducts money from the card" do
@@ -34,30 +35,35 @@ describe Oystercard do
     expect(oystercard.balance).to eq(10)
   end
 
+  it "has an empty list of journeys" do
+    expect(oystercard.journeys).to be_empty
+  end
+
   context "when touched in" do
 
     before do
       oystercard.top_up(20)
-      oystercard.touch_in(station)
-    end
-
-    it "stores the entry station" do
-      expect(oystercard.entry_station).to eq(station)
+      oystercard.touch_in(entry_station)
     end
 
     it "is in a journey" do
       expect(oystercard).to be_in_journey
     end
 
-    it "is not in a journey when the user has touched out" do
-      oystercard.touch_out
-      expect(oystercard).to_not be_in_journey
-    end
+    context "when touching out" do
 
-    it "has no entry station after touch_out" do
-      oystercard.touch_out
-      expect(oystercard.entry_station).to be_nil
-    end
+      let(:journey){ {entry_station: entry_station, exit_station: exit_station} }
+      before do
+        oystercard.touch_out(exit_station)
+      end
+      
+      it "is not in a journey when the user has touched out" do
+        expect(oystercard).not_to be_in_journey
+      end
 
+      it "stores a journey" do
+        expect(oystercard.journeys.last).to eq(journey)
+      end
+    end
   end
 end
