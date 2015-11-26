@@ -2,18 +2,14 @@ require 'oystercard'
 
 describe Oystercard do
 
-  subject(:oystercard) { described_class.new }
+  subject(:oystercard) { described_class.new(journey_log: journey_log) }
 
+  let(:journey_log){ double :journey_log}
   let(:entry_station) { double :entry_station }
   let(:exit_station) { double :exit_station }
 
   it "has a balance" do
     expect(oystercard.balance).to eq(0)
-  end
-
-  it "can be topped up with an amount of money" do
-    oystercard.top_up(10)
-    expect(oystercard.balance).to eq(10)
   end
 
   it "prevents more than the limit on the oystercard being topped up" do
@@ -22,6 +18,7 @@ describe Oystercard do
   end
 
   it "by default does not have an active journey" do
+    allow(journey_log).to receive(:current_journey).and_return(nil)
     expect(oystercard).to_not be_in_journey
   end
 
@@ -29,40 +26,48 @@ describe Oystercard do
     expect{ oystercard.touch_in(entry_station) }.to raise_error("You don't have enough")
   end
 
-  it "deducts money from the card" do
-    oystercard.top_up(20)
-    oystercard.deduct(10)
-    expect(oystercard.balance).to eq(10)
+
+  it "has a journey history" do
+    expect(journey_log).to receive(:completed_journeys)
+    oystercard.journey_history
   end
 
-  it "has an empty list of journeys" do
-    expect(oystercard.journeys).to be_empty
-  end
 
-  context "when touched in" do
+  context "when topped up" do
 
     before do
       oystercard.top_up(20)
+    end
+
+    it "starts a journey" do
+      expect(journey_log).to receive(:start_journey).with(entry_station)
       oystercard.touch_in(entry_station)
     end
 
-    it "is in a journey" do
-      expect(oystercard).to be_in_journey
+    it "deducts money from the card" do
+      oystercard.deduct(10)
+      expect(oystercard.balance).to eq(10)
     end
 
-    context "when touching out" do
+    it "has a balance" do
+      expect(oystercard.balance).to eq(20)
+    end
 
-      let(:journey){ {entry_station: entry_station, exit_station: exit_station} }
+    context "when touched in" do
+
       before do
-        oystercard.touch_out(exit_station)
-      end
-      
-      it "is not in a journey when the user has touched out" do
-        expect(oystercard).not_to be_in_journey
+        allow(journey_log).to receive(:start_journey)
+        oystercard.touch_in(entry_station)
       end
 
-      it "stores a journey" do
-        expect(oystercard.journeys.last).to eq(journey)
+      it "is in a journey" do
+        allow(journey_log).to receive(:current_journey).and_return(:journey)
+        expect(oystercard).to be_in_journey
+      end
+
+      it "can exit a journey" do
+        expect(journey_log).to receive(:exit_journey).with(:exit_station)
+        oystercard.touch_out(:exit_station)
       end
     end
   end
