@@ -5,6 +5,8 @@ class Oystercard
 
   LIMIT = 90
   MINIMUM_CHARGE = 1
+  STANDARD_FARE = 2
+  PENALTY_FARE = 6
 
   attr_reader :balance
 
@@ -26,16 +28,18 @@ class Oystercard
   end
 
   def in_journey?
-    !!current_journey
+    !current_journey.empty?
   end
 
   def touch_in(station)
+    conclude_outstanding_journey if in_journey?
     raise "You don't have enough" if balance < MINIMUM_CHARGE
     journey_log.start_journey(station)
   end
 
   def touch_out(station)
     journey_log.exit_journey(station)
+    in_journey? ? deduct(STANDARD_FARE) : deduct(PENALTY_FARE)
   end
 
   private
@@ -43,4 +47,8 @@ class Oystercard
   attr_writer :balance
   attr_reader :journey_log
 
+  def conclude_outstanding_journey
+    deduct(PENALTY_FARE)
+    journey_log.exit_journey
+  end
 end

@@ -4,7 +4,7 @@ describe Oystercard do
 
   subject(:oystercard) { described_class.new(journey_log: journey_log) }
 
-  let(:journey_log){ double :journey_log}
+  let(:journey_log){ double :journey_log, current_journey: {}, exit_journey: nil }
   let(:entry_station) { double :entry_station }
   let(:exit_station) { double :exit_station }
 
@@ -18,7 +18,6 @@ describe Oystercard do
   end
 
   it "by default does not have an active journey" do
-    allow(journey_log).to receive(:current_journey).and_return(nil)
     expect(oystercard).to_not be_in_journey
   end
 
@@ -53,21 +52,44 @@ describe Oystercard do
       expect(oystercard.balance).to eq(20)
     end
 
+    it "charges a penalty if touched out when not touched in" do
+      allow(journey_log).to receive(:current_journey).and_return({})
+      oystercard.touch_out(exit_station)
+      expect(oystercard.balance).to eq(20 - described_class::PENALTY_FARE)
+    end
+
     context "when touched in" do
 
+      let(:journey){ {entry_station: entry_station} }
+
       before do
-        allow(journey_log).to receive(:start_journey)
-        oystercard.touch_in(entry_station)
+        allow(journey_log).to receive(:current_journey).and_return(journey)
       end
 
       it "is in a journey" do
-        allow(journey_log).to receive(:current_journey).and_return(:journey)
         expect(oystercard).to be_in_journey
       end
 
       it "can exit a journey" do
-        expect(journey_log).to receive(:exit_journey).with(:exit_station)
-        oystercard.touch_out(:exit_station)
+        expect(journey_log).to receive(:exit_journey).with(exit_station)
+        oystercard.touch_out(exit_station)
+      end
+
+      it "deducts the fare upon touch out" do
+        oystercard.touch_out(exit_station)
+        expect(oystercard.balance).to eq(20 - described_class::STANDARD_FARE)
+      end
+
+      it "deducts a penalty fare if already touched in" do
+        allow(journey_log).to receive(:start_journey)
+        oystercard.touch_in(entry_station)
+        expect(oystercard.balance).to eq(20 - described_class::PENALTY_FARE)
+      end
+
+      it "closes previous journey if already touched in" do
+        expect(journey_log).to receive(:exit_journey).with(no_args)
+        allow(journey_log).to receive(:start_journey)
+        oystercard.touch_in(entry_station)
       end
     end
   end
