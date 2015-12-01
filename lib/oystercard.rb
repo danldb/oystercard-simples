@@ -3,28 +3,23 @@ require 'forwardable'
 class Oystercard
   extend Forwardable
 
+  def_delegator :@journey_log, :completed_journeys, :journey_history
+  def_delegator :@journey_log, :current_journey
+
   LIMIT = 90
   MINIMUM_CHARGE = 1
-  STANDARD_FARE = 2
-  PENALTY_FARE = 6
 
   attr_reader :balance
 
-  def initialize(journey_log: JourneyLog)
+  def initialize(journey_log: JourneyLog, fare: Fare)
+    @fare = fare
     @journey_log = journey_log
     @balance = 0
   end
 
-  def_delegator :@journey_log, :completed_journeys, :journey_history
-  def_delegator :@journey_log, :current_journey
-
   def top_up(amount_received)
     self.balance += amount_received
     raise "Over limit of £#{LIMIT}" if balance > LIMIT
-  end
-
-  def deduct(amount_deducted)
-    self.balance -= amount_deducted
   end
 
   def in_journey?
@@ -39,7 +34,7 @@ class Oystercard
 
   def touch_out(station)
     journey_log.exit_journey(station)
-    in_journey? ? deduct(STANDARD_FARE) : deduct(PENALTY_FARE)
+    deduct(fare(journey_history.last))
   end
 
   private
@@ -47,8 +42,16 @@ class Oystercard
   attr_writer :balance
   attr_reader :journey_log
 
+  def deduct(amount_deducted)
+    self.balance -= amount_deducted
+  end
+
   def conclude_outstanding_journey
-    deduct(PENALTY_FARE)
+    deduct(fare(current_journey))
     journey_log.exit_journey
+  end
+
+  def fare(journey)
+    @fare.calculate(journey)
   end
 end
