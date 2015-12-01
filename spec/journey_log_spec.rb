@@ -32,6 +32,12 @@ describe JourneyLog do
       expect(journey_log.completed_journeys).to be_empty
     end
 
+    it "starts a new journey if touched in twice" do
+      journey = journey_log.current_journey
+      journey_log.start_journey(entry_station)
+      expect(journey_log.completed_journeys).to include(journey)
+    end
+
     context "when a journey is complete" do
       let(:journey) do
         { entry_station: entry_station, exit_station: exit_station }

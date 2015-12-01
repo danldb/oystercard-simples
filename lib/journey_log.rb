@@ -5,6 +5,7 @@ class JourneyLog
   end
 
   def start_journey(station)
+    record_current_journey if in_journey?
     current_journey[:entry_station] = station 
   end
 
@@ -23,11 +24,15 @@ class JourneyLog
 
   private
 
-  attr_accessor :journeys
+  attr_reader :journeys
   attr_writer :current_journey
 
   def record_current_journey
     journeys << current_journey
     self.current_journey = nil
+  end
+
+  def in_journey?
+   !current_journey.empty? 
   end
 end
