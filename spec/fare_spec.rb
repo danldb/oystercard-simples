@@ -2,32 +2,30 @@ require "fare"
 
 describe Fare do
 
-  subject(:fare){ described_class }
+  subject(:fare){ described_class.new(journey: journey) }
 
-  let(:entry_station){ double :entry_station }
-  let(:exit_station){ double :exit_station }
-  let(:journey){ {entry_station: entry_station, exit_station: exit_station} }
-
-  it "returns a penalty fare by default" do
-    expect(fare.calculate).to eq(Fare::PENALTY_FARE)
-  end
+  let(:entry_station){ double :entry_station, zone: 1 }
+  let(:exit_station){ double :exit_station, zone: 1 }
+  let(:journey){ double :journey, entry_station: entry_station, exit_station: exit_station }
 
   it "returns a penalty fare if only given entry station" do
-    expect(fare.calculate({entry_station: entry_station})).to eq(Fare::PENALTY_FARE)
+    allow(journey).to receive(:exit_station).and_return(nil)
+    expect(fare.value).to eq(Fare::PENALTY_FARE)
   end
 
   it "returns a penalty fare if only given exit station" do
-    expect(fare.calculate(exit_station: exit_station)).to eq(Fare::PENALTY_FARE)
+    allow(journey).to receive(:entry_station).and_return(nil)
+    expect(fare.value).to eq(Fare::PENALTY_FARE)
   end
 
   it "returns a fare of 1 when travelling within zone 1" do
     update_zones(1,1)
-    expect(fare.calculate(journey)).to eq(1)
+    expect(fare.value).to eq(1)
   end
 
   it "returns a fare of 2 when travelling between zones 1 and 2" do
     update_zones(1,2) 
-    expect(fare.calculate(journey)).to eq(2)
+    expect(fare.value).to eq(2)
   end
 
   def update_zones(entry_zone, exit_zone)
