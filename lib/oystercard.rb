@@ -3,13 +3,13 @@ require 'forwardable'
 class Oystercard
   extend Forwardable
 
-  def_delegator :@journey_log, :completed_journeys, :journey_history
+  def_delegator :@journey_manager, :journey_history, :journey_log
 
   LIMIT = 90
   MINIMUM_CHARGE = 1
 
-  def initialize(journey_log: JourneyLog.new, account: Account.new)
-    @journey_log = journey_log
+  def initialize(account: Account.new, journey_manager: JourneyManager.new)
+    @journey_manager = journey_manager
     @account = account
   end
 
@@ -19,19 +19,19 @@ class Oystercard
 
   def touch_in(station)
     raise "You don't have enough" if balance < MINIMUM_CHARGE
-    journey_log.start_journey(station)
+    journey_manager.start(station)
   end
 
   def touch_out(station)
-    journey_log.exit_journey(station)
+    journey_manager.exit(station)
   end
 
   def balance
-    account.balance(journey_history)
+    account.balance(journey_log)
   end
   
   private
 
-  attr_reader :journey_log, :account
+  attr_reader :journey_manager, :account
 
 end

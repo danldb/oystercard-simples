@@ -2,7 +2,11 @@ class Fare
 
   PENALTY_FARE = 6
 
-  def initialize(journey:)
+  def self.calculate(journey)
+    new(journey).value
+  end
+
+  def initialize(journey)
     @journey = journey
   end
 

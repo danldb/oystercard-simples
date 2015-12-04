@@ -2,14 +2,15 @@ require 'oystercard'
 
 describe Oystercard do
 
-  subject(:oystercard) { described_class.new(journey_log: journey_log, account: account ) }
+  subject(:oystercard) { described_class.new(journey_manager: journey_manager, account: account) }
 
   let(:account){ double :account }
-  let(:journey_log){ double :journey_log, completed_journeys: :journeys }
+  let(:journey_manager){ double :journey_manager, journey_history: :journeys }
   let(:entry_station) { double :entry_station }
   let(:exit_station) { double :exit_station }
 
   it "has a balance" do
+    allow(journey_manager).to receive(:journey_log).and_return(:journeys)
     expect(account).to receive(:balance).with(:journeys)
     oystercard.balance
   end
@@ -25,14 +26,16 @@ describe Oystercard do
   end
 
   it "has a journey history" do
-    expect(journey_log).to receive(:completed_journeys)
-    oystercard.journey_history
+    expect(journey_manager).to receive(:journey_history)
+    oystercard.journey_log
   end
 
+  it "can exit a journey" do
+    expect(journey_manager).to receive(:exit).with(exit_station)
+    oystercard.touch_out(exit_station)
+  end
 
   context "when topped up" do
-
-    let(:journey){ {entry_station: entry_station} }
 
     before do
       allow(account).to receive(:balance).and_return(20)
@@ -43,20 +46,9 @@ describe Oystercard do
     end
 
     it "starts a journey" do
-      expect(journey_log).to receive(:start_journey).with(entry_station)
+      expect(journey_manager).to receive(:start).with(entry_station)
       oystercard.touch_in(entry_station)
     end
 
-    context "when touched in" do
-
-      before do
-        allow(journey_log).to receive(:current_journey).and_return(journey)
-      end
-
-      it "can exit a journey" do
-        expect(journey_log).to receive(:exit_journey).with(exit_station)
-        oystercard.touch_out(exit_station)
-      end
-    end
   end
 end
